@@ -37,10 +37,10 @@ public final class CarModelDictionary {
 			BigDecimal.valueOf(18000),
 			BigDecimal.valueOf(400), BigDecimal.valueOf(1900)));
 		//TODO: zrobic
-		CARS.add(new CarModel(Brand.VOLKSWAGEN, "Grande Punto",
-			BigDecimal.valueOf(1910), 2005, 2009, BigDecimal.valueOf(8700),
-			BigDecimal.valueOf(18000),
-			BigDecimal.valueOf(400), BigDecimal.valueOf(1900)));
+		CARS.add(new CarModel(Brand.VOLKSWAGEN, "Touareg I",
+			BigDecimal.valueOf(3598), 2002, 2010, BigDecimal.valueOf(17000),
+			BigDecimal.valueOf(32000),
+			BigDecimal.valueOf(800), BigDecimal.valueOf(3500)));
 
 	}
 }
