@@ -30,12 +30,12 @@ import javax.swing.*;
 /**
   @author Giovanni Caire - TILAB
  */
-class BookSellerGui extends JFrame {	
-	private BookSellerAgent myAgent;
+class CarBuyerGui extends JFrame {
+	private CarSellerAgent myAgent;
 	
 	private JTextField titleField, priceField;
 	
-	BookSellerGui(BookSellerAgent a) {
+	CarBuyerGui(CarSellerAgent a) {
 		super(a.getLocalName());
 		
 		myAgent = a;
@@ -51,20 +51,18 @@ class BookSellerGui extends JFrame {
 		getContentPane().add(p, BorderLayout.CENTER);
 		
 		JButton addButton = new JButton("Add");
-		addButton.addActionListener( new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				try {
-					String title = titleField.getText().trim();
-					String price = priceField.getText().trim();
-					myAgent.updateCatalogue(title, Integer.parseInt(price));
-					titleField.setText("");
-					priceField.setText("");
-				}
-				catch (Exception e) {
-					JOptionPane.showMessageDialog(BookSellerGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
-				}
+		addButton.addActionListener(ev -> {
+			try {
+				String title = titleField.getText().trim();
+				String price = priceField.getText().trim();
+				myAgent.updateCatalogue(title, Integer.parseInt(price));
+				titleField.setText("");
+				priceField.setText("");
 			}
-		} );
+			catch (Exception e) {
+				JOptionPane.showMessageDialog(CarBuyerGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		});
 		p = new JPanel();
 		p.add(addButton);
 		getContentPane().add(p, BorderLayout.SOUTH);

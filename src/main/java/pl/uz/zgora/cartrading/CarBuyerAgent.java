@@ -33,7 +33,7 @@ import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 
-public class BookBuyerAgent extends Agent {
+public class CarBuyerAgent extends Agent {
 	// The title of the book to buy
 	private String targetBookTitle;
 	// The list of known seller agents
