@@ -3,6 +3,7 @@
 //import jade.core.AID;
 //import jade.core.Agent;
 //import jade.core.behaviours.Behaviour;
+//import jade.core.behaviours.OneShotBehaviour;
 //import jade.core.behaviours.TickerBehaviour;
 //import jade.domain.DFService;
 //import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -11,104 +12,114 @@
 //import jade.lang.acl.ACLMessage;
 //import jade.lang.acl.MessageTemplate;
 //
-//public class CarBuyerAgentOld extends Agent {
+//public class BookBuyerAgent extends Agent {
 //
+//	private BookBuyerGui myGui;
 //	private String targetBookTitle;
+//	//lista znanych sprzedawcow
 //	private AID[] sellerAgents;
 //
 //	@Override
 //	protected void setup() {
-//		System.out.println("Hallo! Buyer-agent " + getAID().getName() + " is ready.");
+//		targetBookTitle = "";
+//		System.out.println(
+//			"Witam! Agent kupujacy " + getAID().getLocalName() + " czeka na dyspozycje kupna.");
+//		myGui = new BookBuyerGui(this);
+//		myGui.display();
+//		//interwal czasowy dla kupujacego pomiedzy wysylaniem kolejnych cfp
+//		//przekazywany jako argument linii polecen
+//		int interval = 20000;
 //		final Object[] args = getArguments();
 //		if (args != null && args.length > 0) {
-//			targetBookTitle = (String) args[0];
-//			System.out.println("Target book is " + targetBookTitle);
-//
-//			addBehaviour(new TickerBehaviour(this, 60000) {
-//				@Override
-//				protected void onTick() {
-//					System.out.println("Trying to buy " + targetBookTitle);
+//			interval = Integer.parseInt(args[0].toString());
+//		}
+//		addBehaviour(new TickerBehaviour(this, interval) {
+//			@Override
+//			protected void onTick() {
+//				//szukaj tylko jesli zlecony zostal tytul pozycji
+//				if (!targetBookTitle.equals("")) {
+//					System.out.println("Szukam pozycji " + targetBookTitle);
+//					//aktualizuj liste znanych sprzedawcow
 //					final DFAgentDescription template = new DFAgentDescription();
 //					final ServiceDescription sd = new ServiceDescription();
-//					sd.setType("car-selling");
+//					sd.setType("book-selling");
 //					template.addServices(sd);
 //					try {
 //						final DFAgentDescription[] result = DFService.search(myAgent, template);
-//						System.out.println("Found the following seller agents:");
+//						System.out.println("Znaleziono sprzedajacych:");
 //						sellerAgents = new AID[result.length];
 //						for (int i = 0; i < result.length; ++i) {
 //							sellerAgents[i] = result[i].getName();
-//							System.out.println(sellerAgents[i].getName());
+//							System.out.println(sellerAgents[i].getLocalName());
 //						}
 //					} catch (final FIPAException fe) {
 //						fe.printStackTrace();
 //					}
 //
-//					// Perform the request
 //					myAgent.addBehaviour(new RequestPerformer());
 //				}
-//			});
-//		} else {
-//			// Make the agent terminate
-//			System.out.println("No target book title specified");
-//			doDelete();
-//		}
+//			}
+//		});
 //	}
 //
-//	// Put agent clean-up operations here
+//	//metoda wywolywana przez gui, gdy skladana jest dyspozycja kupna ksiazki
+//	public void lookForTitle(final String title) {
+//		addBehaviour(new OneShotBehaviour() {
+//			@Override
+//			public void action() {
+//				targetBookTitle = title;
+//				System.out.println("Poszukiwana ksiazka to " + targetBookTitle);
+//			}
+//		});
+//	}
+//
 //	@Override
 //	protected void takeDown() {
-//		// Printout a dismissal message
-//		System.out.println("Buyer-agent " + getAID().getName() + " terminating.");
+//		myGui.dispose();
+//		System.out.println("Agent kupujacy " + getAID().getName() + " zakonczyl.");
 //	}
 //
-//	/**
-//	 * Inner class RequestPerformer. This is the behaviour used by Book-buyer agents to request
-//	 * seller agents the target book.
-//	 */
 //	private class RequestPerformer extends Behaviour {
 //
-//		private AID bestSeller; // The agent who provides the best offer
-//		private int bestPrice;  // The best offered price
-//		private int repliesCnt = 0; // The counter of replies from seller agents
-//		private MessageTemplate mt; // The template to receive replies
+//		private AID bestSeller;
+//		private int bestPrice;
+//		private int repliesCnt = 0;
+//		private MessageTemplate mt;
 //		private int step = 0;
 //
 //		@Override
 //		public void action() {
 //			switch (step) {
 //				case 0:
-//					// Send the cfp to all sellers
+//					//call for proposal (cfp) do znalezionych sprzedajacych
 //					final ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
 //					for (int i = 0; i < sellerAgents.length; ++i) {
 //						cfp.addReceiver(sellerAgents[i]);
 //					}
 //					cfp.setContent(targetBookTitle);
 //					cfp.setConversationId("book-trade");
-//					cfp.setReplyWith("cfp" + System.currentTimeMillis()); // Unique value
+//					cfp.setReplyWith("cfp" + System.currentTimeMillis()); //unikalna wartosc
 //					myAgent.send(cfp);
-//					// Prepare the template to get proposals
 //					mt = MessageTemplate.and(MessageTemplate.MatchConversationId("book-trade"),
 //						MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
 //					step = 1;
 //					break;
 //				case 1:
-//					// Receive all proposals/refusals from seller agents
+//					//odbior ofert od sprzedajacych
 //					final ACLMessage reply = myAgent.receive(mt);
 //					if (reply != null) {
-//						// Reply received
 //						if (reply.getPerformative() == ACLMessage.PROPOSE) {
-//							// This is an offer
+//							//otrzymano oferte
 //							final int price = Integer.parseInt(reply.getContent());
 //							if (bestSeller == null || price < bestPrice) {
-//								// This is the best offer at present
+//								//jak na razie to najlepsza oferta
 //								bestPrice = price;
 //								bestSeller = reply.getSender();
 //							}
 //						}
 //						repliesCnt++;
 //						if (repliesCnt >= sellerAgents.length) {
-//							// We received all replies
+//							//otrzymano wszystkie oferty -> nastepny krok
 //							step = 2;
 //						}
 //					} else {
@@ -116,35 +127,34 @@
 //					}
 //					break;
 //				case 2:
-//					// Send the purchase order to the seller that provided the best offer
+//					//zakup najlepszej oferty
 //					final ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 //					order.addReceiver(bestSeller);
 //					order.setContent(targetBookTitle);
 //					order.setConversationId("book-trade");
 //					order.setReplyWith("order" + System.currentTimeMillis());
 //					myAgent.send(order);
-//					// Prepare the template to get the purchase order reply
 //					mt = MessageTemplate.and(MessageTemplate.MatchConversationId("book-trade"),
 //						MessageTemplate.MatchInReplyTo(order.getReplyWith()));
 //					step = 3;
 //					break;
 //				case 3:
-//					// Receive the purchase order reply
+//					//potwierdzenie zakupu przez agenta sprzedajacego
 //					reply = myAgent.receive(mt);
 //					if (reply != null) {
-//						// Purchase order reply received
 //						if (reply.getPerformative() == ACLMessage.INFORM) {
-//							// Purchase successful. We can terminate
+//							//zakup zakonczony powodzeniem
 //							System.out.println(
-//								targetBookTitle + " successfully purchased from agent " + reply
-//									.getSender().getName());
-//							System.out.println("Price = " + bestPrice);
-//							myAgent.doDelete();
+//								targetBookTitle + " kupiona za " + bestPrice + " od " + reply
+//									.getSender().getLocalName());
+//							System.out.println("Czekam na nowa dyspozycje kupna.");
+//							targetBookTitle = "";
+//							//myAgent.doDelete();
 //						} else {
-//							System.out.println("Attempt failed: requested book already sold.");
+//							System.out.println("Zakup nieudany. " + targetBookTitle
+//								+ " zostala sprzedana w miedzyczasie.");
 //						}
-//
-//						step = 4;
+//						step = 4;    //konczy cala interakcje, ktorej celem jest kupno
 //					} else {
 //						block();
 //					}
@@ -155,10 +165,11 @@
 //		@Override
 //		public boolean done() {
 //			if (step == 2 && bestSeller == null) {
-//				System.out
-//					.println("Attempt failed: " + targetBookTitle + " not available for sale");
+//				System.out.println(targetBookTitle + " nie ma w sprzedazy");
 //			}
+//			//koniec jesli ksiazki nie ma w sprzedazy lub nie udalo sie kupic
 //			return ((step == 2 && bestSeller == null) || step == 4);
 //		}
-//	}  // End of inner class RequestPerformer
+//	}
+//
 //}

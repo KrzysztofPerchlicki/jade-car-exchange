@@ -46,7 +46,8 @@ public class CarSellerAgent extends Agent {
 			fe.printStackTrace();
 		}
 		myGui.dispose();
-		System.out.println("Seller-agent " + getAID().getName() + " terminating.");
+		System.out.println(
+			getAID().getLocalName() + ": Seller-agent " + getAID().getName() + " terminating.");
 	}
 
 //	private class OfferRequestsServer extends CyclicBehaviour {

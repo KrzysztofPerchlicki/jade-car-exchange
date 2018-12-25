@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -114,55 +115,71 @@ class CarBuyerGui extends JFrame {
 		panel.add(maxAdditionalCostPTF);
 
 		final JButton startB = new JButton("Start");
-		startB.addActionListener(e -> {
-			final List<Brand> brands = Arrays.stream(brandsPTF.getText().split(","))
-				.filter(s -> !s.isEmpty())
-				.map(Brand::of).collect(Collectors.toList());
+		startB.addActionListener(event -> {
+			try {
+				final List<Brand> brands = brandsPTF.getText().isEmpty() ? null
+					: Arrays.stream(brandsPTF.getText().split(","))
+						.filter(s -> !s.isEmpty())
+						.map(Brand::of).collect(Collectors.toList());
 
-			final List<String> models = Arrays.stream(modelsPTF.getText().split(","))
-				.filter(s -> !s.isEmpty()).collect(Collectors.toList());
+				final List<String> models = modelsPTF.getText().isEmpty() ? null
+					: Arrays.stream(modelsPTF.getText().split(","))
+						.filter(s -> !s.isEmpty()).collect(Collectors.toList());
 
-			final List<EngineType> engineTypes = Arrays.stream(engineTypesPTF.getText().split(","))
-				.filter(s -> !s.isEmpty())
-				.map(EngineType::of).collect(Collectors.toList());
+				final List<EngineType> engineTypes =
+					engineTypesPTF.getText().isEmpty() ? null : Arrays
+						.stream(engineTypesPTF.getText().split(","))
+						.filter(s -> !s.isEmpty())
+						.map(EngineType::of).collect(Collectors.toList());
 
-			final List<BodyType> bodyTypes = Arrays.stream(bodyTypesPTF.getText().split(","))
-				.filter(s -> !s.isEmpty())
-				.map(BodyType::of).collect(Collectors.toList());
+				final List<BodyType> bodyTypes = bodyTypesPTF.getText().isEmpty() ? null
+					: Arrays.stream(bodyTypesPTF.getText().split(","))
+						.filter(s -> !s.isEmpty())
+						.map(BodyType::of).collect(Collectors.toList());
 
-			final Double minEngineCapacity = minEngineCapacityPTF.getText().isEmpty() ? null
-				: Double.parseDouble(minEngineCapacityPTF.getText());
+				final Double minEngineCapacity = minEngineCapacityPTF.getText().isEmpty() ? null
+					: Double.parseDouble(minEngineCapacityPTF.getText());
 
-			final Double maxEngineCapacity = maxEngineCapacityPTF.getText().isEmpty() ? null
-				: Double.parseDouble(maxEngineCapacityPTF.getText());
+				final Double maxEngineCapacity = maxEngineCapacityPTF.getText().isEmpty() ? null
+					: Double.parseDouble(maxEngineCapacityPTF.getText());
 
-			final Integer minProductionYear =
-				minProductionYearPTF.getText().isEmpty() ? null
-					: Integer.parseInt(minProductionYearPTF.getText());
+				final Integer minProductionYear =
+					minProductionYearPTF.getText().isEmpty() ? null
+						: Integer.parseInt(minProductionYearPTF.getText());
 
-			final Integer maxProductionYear = maxProductionYearPTF.getText().isEmpty() ? null
-				: Integer.parseInt(maxProductionYearPTF.getText());
+				final Integer maxProductionYear = maxProductionYearPTF.getText().isEmpty() ? null
+					: Integer.parseInt(maxProductionYearPTF.getText());
 
-			final BigDecimal minCost =
-				minCostPTF.getText().isEmpty() ? null : new BigDecimal(minCostPTF.getText());
+				final BigDecimal minCost =
+					minCostPTF.getText().isEmpty() ? null : new BigDecimal(minCostPTF.getText());
 
-			final BigDecimal maxCost =
-				maxCostPTF.getText().isEmpty() ? null : new BigDecimal(maxCostPTF.getText());
+				final BigDecimal maxCost =
+					maxCostPTF.getText().isEmpty() ? null : new BigDecimal(maxCostPTF.getText());
 
-			final BigDecimal minAdditionalCost = minAdditionalCostPTF.getText().isEmpty() ? null
-				: new BigDecimal(minAdditionalCostPTF.getText());
+				final BigDecimal minAdditionalCost = minAdditionalCostPTF.getText().isEmpty() ? null
+					: new BigDecimal(minAdditionalCostPTF.getText());
 
-			final BigDecimal maxAdditionalCost = maxAdditionalCostPTF.getText().isEmpty() ? null
-				: new BigDecimal(maxAdditionalCostPTF.getText());
+				final BigDecimal maxAdditionalCost = maxAdditionalCostPTF.getText().isEmpty() ? null
+					: new BigDecimal(maxAdditionalCostPTF.getText());
 
-			final CarBuyRequest request = builder.withBrands(brands).withModels(models)
-				.withEngineTypes(engineTypes).withBodyTypes(bodyTypes)
-				.withMinEngineCapacity(minEngineCapacity)
-				.withMaxEngineCapacity(maxEngineCapacity).withMinProductionYear(minProductionYear)
-				.withMaxProductionYear(maxProductionYear).withMinCost(minCost).withMaxCost(maxCost)
-				.withMinAdditionalCost(minAdditionalCost).withMaxAdditionalCost(maxAdditionalCost)
-				.build();
-			panel.setEnabled(false);
+				final CarBuyRequest request = builder.withBrands(brands).withModels(models)
+					.withEngineTypes(engineTypes).withBodyTypes(bodyTypes)
+					.withMinEngineCapacity(minEngineCapacity)
+					.withMaxEngineCapacity(maxEngineCapacity)
+					.withMinProductionYear(minProductionYear)
+					.withMaxProductionYear(maxProductionYear).withMinCost(minCost)
+					.withMaxCost(maxCost)
+					.withMinAdditionalCost(minAdditionalCost)
+					.withMaxAdditionalCost(maxAdditionalCost)
+					.build();
+
+				myAgent.updateClientRequest(request);
+
+			} catch (final Exception ex) {
+				JOptionPane.showMessageDialog(CarBuyerGui.this,
+					"Nieprawidlowe wartosci. " + ex.getMessage(), "Blad",
+					JOptionPane.ERROR_MESSAGE);
+			}
 		});
 
 		panel.add(new JLabel());

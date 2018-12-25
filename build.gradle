@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+	id 'java'
 }
 
 group 'pl.zgora.uz'
@@ -8,17 +8,18 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
-    mavenCentral()
-    maven {
-        url('http://jade.tilab.com/maven/')
-    }
+	mavenCentral()
+	maven {
+		url('http://jade.tilab.com/maven/')
+	}
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    // https://mvnrepository.com/artifact/com.tilab.jade/jade
-    compile group: 'com.tilab.jade', name: 'jade', version: '4.5.0'
-    // https://mvnrepository.com/artifact/org.projectlombok/lombok
-    compile group: 'org.projectlombok', name: 'lombok', version: '1.18.0'
+	testCompile group: 'junit', name: 'junit', version: '4.12'
+	// https://mvnrepository.com/artifact/com.tilab.jade/jade
+	compile group: 'com.tilab.jade', name: 'jade', version: '4.5.0'
+	// https://mvnrepository.com/artifact/org.projectlombok/lombok
+	compile group: 'org.projectlombok', name: 'lombok', version: '1.18.0'
+	compile group: 'com.massisframework', name: 'j-text-utils', version: '0.3.4'
 
 }

@@ -1,8 +1,10 @@
 package pl.uz.zgora.cartrading;
 
+import dnl.utils.text.table.TextTable;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -123,5 +125,33 @@ public class CarBuyRequest implements Serializable {
 			carBuyRequest.brands = this.brands;
 			return carBuyRequest;
 		}
+	}
+
+	public void print() {
+		final String[] columnNames = new String[]{"Brands", "Models", "Engine types", "Body types",
+			"Engine capacity", "Production year", "Cost", "Additional cost"};
+		final Object[][] data = new String[][]{
+			{brands == null ? "*"
+				: brands.stream().map(Enum::name).collect(Collectors.joining(",")),
+				models == null ? "*" : String.join(",", models),
+				engineTypes == null ? "*"
+					: engineTypes.stream().map(Enum::name).collect(Collectors.joining(",")),
+				bodyTypes == null ? "*"
+					: bodyTypes.stream().map(Enum::name).collect(Collectors.joining(",")),
+				(minEngineCapacity == null ? "*"
+					: minEngineCapacity.toString()) + "-" + (maxEngineCapacity == null ? "*"
+					: maxEngineCapacity.toString()),
+				(minProductionYear == null ? "*"
+					: minProductionYear.toString()) + "-" + (maxProductionYear == null ? "*"
+					: maxProductionYear.toString()),
+				(minCost == null ? "*" : minCost.toPlainString()) + "-" + (maxCost == null ? "*"
+					: maxCost.toPlainString()),
+				(minAdditionalCost == null ? "*"
+					: minAdditionalCost.toPlainString()) + "-" + (maxAdditionalCost == null ? "*"
+					: maxAdditionalCost.toPlainString())
+			}
+		};
+		final TextTable tt = new TextTable(columnNames, data);
+		tt.printTable();
 	}
 }
