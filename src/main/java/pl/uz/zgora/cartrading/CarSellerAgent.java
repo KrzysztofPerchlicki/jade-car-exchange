@@ -24,7 +24,7 @@ public class CarSellerAgent extends Agent {
 		final DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		final ServiceDescription sd = new ServiceDescription();
-		sd.setType("car-selling");
+		sd.setType("car-seller");
 		sd.setName("JADE-car-trading");
 		dfd.addServices(sd);
 		try {

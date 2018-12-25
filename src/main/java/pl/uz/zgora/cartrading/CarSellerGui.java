@@ -6,42 +6,48 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 class CarSellerGui extends JFrame {
 
 	private CarSellerAgent myAgent;
 
-	CarSellerGui(final CarSellerAgent a) {
-		super(a.getLocalName());
+	CarSellerGui(final CarSellerAgent agent) {
+		super(agent.getLocalName());
 
-		myAgent = a;
+		myAgent = agent;
+		final AtomicInteger counter = new AtomicInteger(1);
 
-		final JPanel p = new JPanel();
-		p.setLayout(new GridLayout(9, 8));
-		p.add(new JLabel("Brand"));
-		p.add(new JLabel("Model"));
-		p.add(new JLabel("Body type"));
-		p.add(new JLabel("Engine type"));
-		p.add(new JLabel("Engine capacity"));
-		p.add(new JLabel("Production year"));
-		p.add(new JLabel("Cost"));
-		p.add(new JLabel("Additional cost"));
+		final JPanel panel = new JPanel();
+		panel.setLayout(new GridLayout(9, 9));
+		panel.add(new JLabel("Lp"));
+		panel.add(new JLabel("Brand"));
+		panel.add(new JLabel("Model"));
+		panel.add(new JLabel("Body type"));
+		panel.add(new JLabel("Engine type"));
+		panel.add(new JLabel("Engine capacity"));
+		panel.add(new JLabel("Production year"));
+		panel.add(new JLabel("Cost"));
+		panel.add(new JLabel("Additional cost"));
 
 		myAgent.getCatalogue().forEach(car -> {
-			p.add(new JLabel(car.getBrand()));
-			p.add(new JLabel(car.getModel()));
-			p.add(new JLabel(car.getBodyType()));
-			p.add(new JLabel(car.getEngineType()));
-			p.add(new JLabel(car.getEngineCapacity()));
-			p.add(new JLabel(car.getProductionYear()));
-			p.add(new JLabel(car.getCost()));
-			p.add(new JLabel(car.getAdditionalCost()));
+			panel.add(new JLabel(String.valueOf(counter.getAndIncrement())));
+			panel.add(new JLabel(car.getBrand().getName()));
+			panel.add(new JLabel(car.getModel()));
+			panel.add(new JLabel(car.getBodyType().name()));
+			panel.add(new JLabel(car.getEngineType().name()));
+			panel.add(new JLabel(String.valueOf(car.getEngineCapacity())));
+			panel.add(new JLabel(String.valueOf(car.getProductionYear())));
+			panel.add(new JLabel(car.getCost().toPlainString()));
+			panel.add(new JLabel(car.getAdditionalCost().toPlainString()));
 		});
 
-		getContentPane().add(p, BorderLayout.CENTER);
+		final JScrollPane scrollPane = new JScrollPane(panel);
+		getContentPane().add(scrollPane, BorderLayout.CENTER);
 
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -50,7 +56,7 @@ class CarSellerGui extends JFrame {
 			}
 		});
 
-		setResizable(false);
+		setResizable(true);
 	}
 
 	public void showGui() {
