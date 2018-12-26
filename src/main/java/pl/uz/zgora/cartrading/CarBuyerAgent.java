@@ -8,14 +8,17 @@ import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
+import java.math.BigDecimal;
+import java.util.List;
 
 public class CarBuyerAgent extends Agent {
 
 
 	private CarBuyerGui myGui;
-	private CarBuyRequest carBuyRequest;
+	private List<CarBuyRequest> carBuyRequests;
 	//lista znanych sprzedawcow
 	private AID[] sellerAgents;
+	private BigDecimal money = BigDecimal.valueOf(100000);
 
 	@Override
 	protected void setup() {
@@ -34,7 +37,7 @@ public class CarBuyerAgent extends Agent {
 			@Override
 			protected void onTick() {
 				//szukaj tylko jesli zlecony zostal tytul pozycji
-				if (carBuyRequest != null) {
+				if (carBuyRequests != null && carBuyRequests.size() > 0) {
 					System.out.println(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
 					//aktualizuj liste znanych sprzedawcow
 					final DFAgentDescription template = new DFAgentDescription();
@@ -61,14 +64,14 @@ public class CarBuyerAgent extends Agent {
 	}
 
 	//metoda wywolywana przez gui, gdy skladana jest dyspozycja kupna auta
-	public void updateClientRequest(final CarBuyRequest request) {
+	public void updateClientRequests(final List<CarBuyRequest> requests) {
 		addBehaviour(new OneShotBehaviour() {
 			@Override
 			public void action() {
-				carBuyRequest = request;
+				carBuyRequests = requests;
 				System.out.println(
 					getAID().getLocalName() + ": Kryteria wyszukiwan:");
-				carBuyRequest.print();
+				carBuyRequests.forEach(CarBuyRequest::print);
 			}
 		});
 	}
