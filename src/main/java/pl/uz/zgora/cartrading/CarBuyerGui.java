@@ -24,12 +24,13 @@ class CarBuyerGui extends JFrame {
 
 	private CarBuyerAgent myAgent;
 	private CarBuyRequest.Builder builder = CarBuyRequest.Builder.aCarBuyRequest();
-	private List<CarBuyRequest> carBuyRequests = new ArrayList<>();
+	private List<CarBuyRequest> carBuyRequests;
 
 	CarBuyerGui(final CarBuyerAgent agent) {
 		super(agent.getLocalName());
-
 		myAgent = agent;
+
+		this.carBuyRequests = myAgent.getCarBuyRequests();
 		final AtomicInteger counter = new AtomicInteger(1);
 
 		final JPanel panel = new JPanel();
@@ -118,8 +119,8 @@ class CarBuyerGui extends JFrame {
 		panel.add(maxAdditionalCostPTF);
 
 		final JPanel confirmButtonPanel = new JPanel();
-		final JLabel offersL = new JLabel("0");
-		final JButton confirmB = new JButton("Add");
+		final JLabel offersL = new JLabel(String.valueOf(carBuyRequests.size()));
+		final JButton confirmB = new JButton(carBuyRequests.size() < 3 ? "Add" : "Start");
 
 		confirmButtonPanel.add(confirmB);
 		confirmButtonPanel.add(offersL);
@@ -240,9 +241,8 @@ class CarBuyerGui extends JFrame {
 	public void showGui() {
 		pack();
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		final int centerX = (int) screenSize.getWidth() / 2;
-		final int centerY = (int) screenSize.getHeight() / 2;
-		setLocation(centerX - getWidth() / 2, centerY - getHeight() / 2);
+		final int rightX = (int) screenSize.getWidth();
+		setLocation(rightX, 0 + getHeight() * (myAgent.getAgentNumber() - 1));
 		super.setVisible(true);
 	}
 }

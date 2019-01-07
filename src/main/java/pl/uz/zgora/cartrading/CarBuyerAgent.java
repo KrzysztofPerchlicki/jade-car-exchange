@@ -13,13 +13,15 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CarBuyerAgent extends Agent {
 
 
 	private CarBuyerGui myGui;
-	private List<CarBuyRequest> carBuyRequests;
+	private List<CarBuyRequest> carBuyRequests = new ArrayList<>();
+	private int agentNumber;
 	//lista znanych sprzedawcow
 	private AID[] sellerAgents;
 	private BigDecimal money = BigDecimal.valueOf(100000);
@@ -28,19 +30,21 @@ public class CarBuyerAgent extends Agent {
 	protected void setup() {
 		System.out.println(
 			getAID().getLocalName() + ": Czekam na dyspozycje kupna...");
+		final Object[] args = getArguments();
+		if (args.length > 0) {
+			this.agentNumber = (int) args[0];
+			this.carBuyRequests = (List<CarBuyRequest>) args[1];
+
+		}
 		myGui = new CarBuyerGui(this);
 		myGui.showGui();
 		//interwal czasowy dla kupujacego pomiedzy wysylaniem kolejnych cfp
 		//przekazywany jako argument linii polecen
-		int interval = 20000;
-		final Object[] args = getArguments();
-		if (args != null && args.length > 0) {
-			interval = Integer.parseInt(args[0].toString());
-		}
+		final int interval = 20000;
 		addBehaviour(new TickerBehaviour(this, interval) {
 			@Override
 			protected void onTick() {
-				if (carBuyRequests != null && carBuyRequests.size() > 0) {
+				if (carBuyRequests != null && !carBuyRequests.isEmpty()) {
 					System.out.println(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
 					//aktualizuj liste znanych sprzedawcow
 					final DFAgentDescription template = new DFAgentDescription();
@@ -196,5 +200,13 @@ public class CarBuyerAgent extends Agent {
 			return ((step == BuyerSteps.RECEIVE_OFFERS && bestSeller == null)
 				|| step == BuyerSteps.END_SUCCESSFUL || step == BuyerSteps.END_ERROR);
 		}
+	}
+
+	public List<CarBuyRequest> getCarBuyRequests() {
+		return carBuyRequests;
+	}
+
+	public int getAgentNumber() {
+		return agentNumber;
 	}
 }

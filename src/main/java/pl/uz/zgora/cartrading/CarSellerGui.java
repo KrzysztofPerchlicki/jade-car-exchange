@@ -62,9 +62,9 @@ class CarSellerGui extends JFrame {
 	public void showGui() {
 		pack();
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		final int centerX = (int) screenSize.getWidth() / 2;
-		final int centerY = (int) screenSize.getHeight() / 2;
-		setLocation(centerX - getWidth() / 2, centerY - getHeight() / 2);
+		setSize(new Dimension(getWidth(), 2 * getHeight() / 3));
+		setLocation(0, 0 + getHeight() * (((int) myAgent.getArguments()[0]) - 1));
+
 		super.setVisible(true);
 	}
 }
