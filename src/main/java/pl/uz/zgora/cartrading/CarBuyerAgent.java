@@ -49,7 +49,8 @@ public class CarBuyerAgent extends Agent {
 		addBehaviour(new TickerBehaviour(this, interval) {
 			@Override
 			protected void onTick() {
-				if (carBuyRequests != null && !carBuyRequests.isEmpty()) {
+				if (carBuyRequests.stream()
+					.anyMatch(carBuyRequest -> !carBuyRequest.isProcessing())) {
 					PrintService.print(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
 					//aktualizuj liste znanych sprzedawcow
 					final DFAgentDescription template = new DFAgentDescription();
@@ -69,11 +70,11 @@ public class CarBuyerAgent extends Agent {
 					}
 					PrintService.print(getAID().getLocalName() + ": Zaczynamy...\n\n");
 
-					carBuyRequests.forEach(carBuyRequest -> {
-						myAgent.addBehaviour(new CarBuyerAgent.RequestPerformer(carBuyRequest));
-					});
-					carBuyRequests = new ArrayList<>();
-					myGui.removeAllRequests();
+					carBuyRequests.stream().filter(carBuyRequest -> !carBuyRequest.isProcessing())
+						.forEach(carBuyRequest -> {
+							myAgent.addBehaviour(new CarBuyerAgent.RequestPerformer(carBuyRequest));
+							carBuyRequest.setProcessing(true);
+						});
 				}
 			}
 		});
@@ -193,6 +194,9 @@ public class CarBuyerAgent extends Agent {
 								+ ": Kupiono auto o ponizszych parametrach za "
 								+ bestPrice + " od " + confirmBuyReply
 								.getSender().getLocalName() + "\n" + bestOffer.toString());
+							
+							carBuyRequests.remove(carBuyRequest);
+							myGui.removeRequest();
 						} else {
 							PrintService.print(getAID().getLocalName()
 								+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie\n"
@@ -211,13 +215,18 @@ public class CarBuyerAgent extends Agent {
 		@Override
 		public boolean done() {
 			if (step == BuyerSteps.TRY_BUY && bestSeller == null) {
+				carBuyRequest.setProcessing(false);
+
 				PrintService.print(
 					getAID().getLocalName() + ": Nie ma w sprzedazy dla parametrow\n"
-						+ carBuyRequest
-						.toString());
+						+ carBuyRequest.toString());
+				return true;
+			} else if (step == BuyerSteps.END_SUCCESSFUL || step == BuyerSteps.END_ERROR) {
+				carBuyRequest.setProcessing(false);
+				return true;
 			}
-			return ((step == BuyerSteps.TRY_BUY && bestSeller == null)
-				|| step == BuyerSteps.END_SUCCESSFUL || step == BuyerSteps.END_ERROR);
+
+			return false;
 		}
 	}
 }

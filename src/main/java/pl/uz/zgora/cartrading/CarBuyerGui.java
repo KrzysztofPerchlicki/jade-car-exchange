@@ -28,6 +28,7 @@ class CarBuyerGui extends JFrame {
 
 	private JButton confirmB;
 	private JButton resetB;
+	private JLabel offersL;
 	private JLabel moneyL = new JLabel();
 
 	CarBuyerGui(final CarBuyerAgent agent) {
@@ -38,8 +39,11 @@ class CarBuyerGui extends JFrame {
 		createGUI();
 	}
 
-	public void removeAllRequests() {
-		resetB.doClick();
+	public void removeRequest() {
+		carBuyRequests = new ArrayList<>();
+		confirmB.setEnabled(true);
+		offersL.setText(String.valueOf(Integer.parseInt(offersL.getText()) - 1));
+		confirmB.setText("Add");
 	}
 
 	public void updateMoneyL() {
@@ -150,7 +154,7 @@ class CarBuyerGui extends JFrame {
 		panel.add(maxAdditionalCostPTF);
 
 		final JPanel confirmButtonPanel = new JPanel();
-		final JLabel offersL = new JLabel(String.valueOf(carBuyRequests.size()));
+		offersL = new JLabel(String.valueOf(carBuyRequests.size()));
 		confirmB = new JButton(carBuyRequests.size() < 3 ? "Add" : "Start");
 		confirmB.setEnabled(carBuyRequests.size() < 3);
 

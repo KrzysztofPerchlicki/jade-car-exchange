@@ -9,7 +9,7 @@ public class RandomCarsGenerator {
 
 	public static final List<Car> generateCars() {
 		final List<Car> cars = new ArrayList<>();
-		final Random random = new Random(100);
+		final Random random = new Random();
 		final BodyType[] bodyTypes = BodyType.values();
 		final EngineType[] engineTypes = EngineType.values();
 		CarModelDictionary.CARS.forEach(carModel -> {

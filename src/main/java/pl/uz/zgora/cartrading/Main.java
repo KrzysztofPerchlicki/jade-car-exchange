@@ -28,7 +28,7 @@ public class Main {
 
 		System.out.println("Launching the rma agent on the main container ...");
 		mainContainer.createNewAgent("rma", "jade.tools.rma.rma", new Object[0]).start();
-		createSellerAgents(mainContainer, 1);
+		createSellerAgents(mainContainer, 10);
 		final List<CarBuyRequest> buyer1Requests = new ArrayList<>();
 		buyer1Requests.add(
 			CarBuyRequest.Builder.aCarBuyRequest().withBrands(Collections.singletonList(Brand.FIAT))
@@ -41,34 +41,34 @@ public class Main {
 			CarBuyRequest.Builder.aCarBuyRequest().withBrands(Collections.singletonList(Brand.AUDI))
 				.build());
 		createBuyerAgent(mainContainer, buyer1Requests, 1);
-//		final List<CarBuyRequest> buyer2Requests = new ArrayList<>();
-//		buyer2Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withEngineTypes(Collections.singletonList(EngineType.GASOLINE))
-//				.build());
-//		buyer2Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withEngineTypes(Collections.singletonList(EngineType.GAS))
-//				.build());
-//		buyer2Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withEngineTypes(Collections.singletonList(EngineType.DIESEL))
-//				.build());
-//		createBuyerAgent(mainContainer, buyer2Requests, 2);
-//		final List<CarBuyRequest> buyer3Requests = new ArrayList<>();
-//		buyer3Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withBodyTypes(Collections.singletonList(BodyType.HATCHBACK))
-//				.build());
-//		buyer3Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withBodyTypes(Collections.singletonList(BodyType.KOMBI))
-//				.build());
-//		buyer3Requests.add(
-//			CarBuyRequest.Builder.aCarBuyRequest()
-//				.withBodyTypes(Collections.singletonList(BodyType.SEDAN))
-//				.build());
-//		createBuyerAgent(mainContainer, buyer3Requests, 3);
+		final List<CarBuyRequest> buyer2Requests = new ArrayList<>();
+		buyer2Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withEngineTypes(Collections.singletonList(EngineType.GASOLINE))
+				.build());
+		buyer2Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withEngineTypes(Collections.singletonList(EngineType.GAS))
+				.build());
+		buyer2Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withEngineTypes(Collections.singletonList(EngineType.DIESEL))
+				.build());
+		createBuyerAgent(mainContainer, buyer2Requests, 2);
+		final List<CarBuyRequest> buyer3Requests = new ArrayList<>();
+		buyer3Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withBodyTypes(Collections.singletonList(BodyType.HATCHBACK))
+				.build());
+		buyer3Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withBodyTypes(Collections.singletonList(BodyType.KOMBI))
+				.build());
+		buyer3Requests.add(
+			CarBuyRequest.Builder.aCarBuyRequest()
+				.withBodyTypes(Collections.singletonList(BodyType.SEDAN))
+				.build());
+		createBuyerAgent(mainContainer, buyer3Requests, 3);
 	}
 
 	private static void createSellerAgents(final AgentContainer container, final int count)

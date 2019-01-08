@@ -9,10 +9,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@EqualsAndHashCode
 @Getter
 public class CarBuyRequest implements Serializable {
 
@@ -28,6 +31,8 @@ public class CarBuyRequest implements Serializable {
 	private BigDecimal maxCost;
 	private BigDecimal minAdditionalCost;
 	private BigDecimal maxAdditionalCost;
+	@Setter
+	private boolean processing;
 
 
 	public static final class Builder {
@@ -126,6 +131,7 @@ public class CarBuyRequest implements Serializable {
 			carBuyRequest.minProductionYear = this.minProductionYear;
 			carBuyRequest.engineTypes = this.engineTypes;
 			carBuyRequest.brands = this.brands;
+			carBuyRequest.processing = false;
 			return carBuyRequest;
 		}
 	}
