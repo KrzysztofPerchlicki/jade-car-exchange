@@ -29,7 +29,7 @@ public class CarBuyerAgent extends Agent {
 	@Override
 	protected void setup() {
 		System.out.println(
-			getAID().getLocalName() + ": Czekam na dyspozycje kupna...");
+			getAID().getLocalName() + ": Czekam na dyspozycje kupna...\n");
 		final Object[] args = getArguments();
 		if (args.length > 0) {
 			this.agentNumber = (int) args[0];
@@ -40,12 +40,12 @@ public class CarBuyerAgent extends Agent {
 		myGui.showGui();
 		//interwal czasowy dla kupujacego pomiedzy wysylaniem kolejnych cfp
 		//przekazywany jako argument linii polecen
-		final int interval = 20000;
+		final int interval = 5000;
 		addBehaviour(new TickerBehaviour(this, interval) {
 			@Override
 			protected void onTick() {
 				if (carBuyRequests != null && !carBuyRequests.isEmpty()) {
-					System.out.println(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
+					PrintService.print(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
 					//aktualizuj liste znanych sprzedawcow
 					final DFAgentDescription template = new DFAgentDescription();
 					final ServiceDescription sd = new ServiceDescription();
@@ -53,20 +53,22 @@ public class CarBuyerAgent extends Agent {
 					template.addServices(sd);
 					try {
 						final DFAgentDescription[] result = DFService.search(myAgent, template);
-						System.out.println(getAID().getLocalName() + ": Znaleziono sprzedajacych:");
+						PrintService.print(getAID().getLocalName() + ": Znaleziono sprzedajacych:");
 						sellerAgents = new AID[result.length];
 						for (int i = 0; i < result.length; ++i) {
 							sellerAgents[i] = result[i].getName();
-							System.out.println(sellerAgents[i].getLocalName());
+							PrintService.print(sellerAgents[i].getLocalName());
 						}
 					} catch (final FIPAException fe) {
 						fe.printStackTrace();
 					}
-					System.out.println(getAID().getLocalName() + ": Zaczynamy...");
+					PrintService.print(getAID().getLocalName() + ": Zaczynamy...\n\n");
 
 					carBuyRequests.forEach(carBuyRequest -> {
 						myAgent.addBehaviour(new CarBuyerAgent.RequestPerformer(carBuyRequest));
 					});
+					carBuyRequests = new ArrayList<>();
+					myGui.removeAllRequests();
 				}
 			}
 		});
@@ -78,9 +80,11 @@ public class CarBuyerAgent extends Agent {
 			@Override
 			public void action() {
 				carBuyRequests = requests;
-				System.out.println(
-					getAID().getLocalName() + ": Kryteria wyszukiwan:");
-				carBuyRequests.forEach(CarBuyRequest::print);
+				final StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append(getAID().getLocalName()).append(": Kryteria wyszukiwan:\n");
+				carBuyRequests.forEach(carBuyRequest -> stringBuilder.append(carBuyRequests));
+				PrintService.print(stringBuilder.toString());
+
 			}
 		});
 	}
@@ -88,14 +92,14 @@ public class CarBuyerAgent extends Agent {
 	@Override
 	protected void takeDown() {
 		myGui.dispose();
-		System.out.println(getAID().getLocalName() + ": Zakończyłem żywot");
+		PrintService.print(getAID().getLocalName() + ": Zakończyłem żywot");
 	}
 
 	private class RequestPerformer extends Behaviour {
 
 		private AID bestSeller;
-		private int bestPrice;
-		private int repliesCnt = 0;
+		private BigDecimal bestPrice;
+		private int repliesCount = 0;
 		private MessageTemplate mt;
 		private BuyerSteps step = BuyerSteps.SEARCH;
 		private CarBuyRequest carBuyRequest;
@@ -132,15 +136,16 @@ public class CarBuyerAgent extends Agent {
 					if (searchReply != null) {
 						if (searchReply.getPerformative() == ACLMessage.PROPOSE) {
 							//otrzymano oferte
-							final int price = Integer.parseInt(searchReply.getContent());
-							if (bestSeller == null || price < bestPrice) {
+							final BigDecimal price = BigDecimal
+								.valueOf(Double.parseDouble(searchReply.getContent()));
+							if (bestSeller == null || price.compareTo(bestPrice) < 0) {
 								//jak na razie to najlepsza oferta
 								bestPrice = price;
 								bestSeller = searchReply.getSender();
 							}
 						}
-						repliesCnt++;
-						if (repliesCnt >= sellerAgents.length) {
+						repliesCount++;
+						if (repliesCount >= sellerAgents.length) {
 							//otrzymano wszystkie oferty -> nastepny krok
 							step = BuyerSteps.TRY_BUY;
 						}
@@ -171,15 +176,14 @@ public class CarBuyerAgent extends Agent {
 					if (confirmBuyReply != null) {
 						if (confirmBuyReply.getPerformative() == ACLMessage.INFORM) {
 							//zakup zakonczony powodzeniem
-							System.out.println(getAID().getLocalName()
-								+ ": Kupiono auto o ponizszych parametrach za " + bestPrice + " od "
-								+ confirmBuyReply
-								.getSender().getLocalName());
-							carBuyRequest.print();
+							PrintService.print(getAID().getLocalName()
+								+ ": Kupiono auto o ponizszych parametrach za "
+								+ bestPrice + " od " + confirmBuyReply
+								.getSender().getLocalName() + "\n" + carBuyRequest.toString());
 						} else {
-							System.out.println(getAID().getLocalName()
-								+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie");
-							carBuyRequest.print();
+							PrintService.print(getAID().getLocalName()
+								+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie\n"
+								+ carBuyRequest.toString());
 						}
 						step = BuyerSteps.END_SUCCESSFUL;    //konczy cala interakcje, ktorej celem jest kupno
 					} else {
@@ -194,8 +198,10 @@ public class CarBuyerAgent extends Agent {
 		@Override
 		public boolean done() {
 			if (step == BuyerSteps.RECEIVE_OFFERS && bestSeller == null) {
-				System.out.println(getAID().getLocalName() + ": Nie ma w sprzedazy dla parametrow");
-				carBuyRequest.print();
+				PrintService.print(
+					getAID().getLocalName() + ": Nie ma w sprzedazy dla parametrow\n"
+						+ carBuyRequest
+						.toString());
 			}
 			return ((step == BuyerSteps.RECEIVE_OFFERS && bestSeller == null)
 				|| step == BuyerSteps.END_SUCCESSFUL || step == BuyerSteps.END_ERROR);
@@ -208,5 +214,9 @@ public class CarBuyerAgent extends Agent {
 
 	public int getAgentNumber() {
 		return agentNumber;
+	}
+
+	public BigDecimal getMoney() {
+		return money;
 	}
 }

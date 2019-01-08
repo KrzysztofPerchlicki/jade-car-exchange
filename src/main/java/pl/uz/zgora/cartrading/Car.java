@@ -1,6 +1,10 @@
 package pl.uz.zgora.cartrading;
 
 import dnl.utils.text.table.TextTable;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +13,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class Car {
+public class Car implements Serializable {
 
 	private Brand brand;
 	private String model;
@@ -20,7 +24,8 @@ public class Car {
 	private BigDecimal cost;
 	private BigDecimal additionalCost;
 
-	public void print() {
+	@Override
+	public String toString() {
 		final String[] columnNames = new String[]{"Brand", "Model", "Engine type", "Body type",
 			"Engine capacity", "Production year", "Cost", "Additional cost"};
 		final Object[][] data = new String[][]{
@@ -34,8 +39,15 @@ public class Car {
 				additionalCost.toPlainString()
 			}
 		};
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		final TextTable tt = new TextTable(columnNames, data);
-		tt.printTable();
+		tt.printTable(new PrintStream(outputStream), 0);
+		try {
+			return outputStream.toString("UTF-8");
+		} catch (final UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return "";
+		}
 	}
 
 }

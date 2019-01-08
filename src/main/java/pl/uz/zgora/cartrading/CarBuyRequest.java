@@ -1,7 +1,10 @@
 package pl.uz.zgora.cartrading;
 
 import dnl.utils.text.table.TextTable;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -127,7 +130,8 @@ public class CarBuyRequest implements Serializable {
 		}
 	}
 
-	public void print() {
+	@Override
+	public String toString() {
 		final String[] columnNames = new String[]{"Brands", "Models", "Engine types", "Body types",
 			"Engine capacity", "Production year", "Cost", "Additional cost"};
 		final Object[][] data = new String[][]{
@@ -151,7 +155,16 @@ public class CarBuyRequest implements Serializable {
 					: maxAdditionalCost.toPlainString())
 			}
 		};
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		final TextTable tt = new TextTable(columnNames, data);
-		tt.printTable();
+		tt.printTable(new PrintStream(outputStream), 0);
+		try {
+			return outputStream.toString("UTF-8");
+		} catch (final UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return "";
+		}
+
+
 	}
 }

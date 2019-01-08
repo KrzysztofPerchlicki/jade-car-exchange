@@ -26,15 +26,46 @@ class CarBuyerGui extends JFrame {
 	private CarBuyRequest.Builder builder = CarBuyRequest.Builder.aCarBuyRequest();
 	private List<CarBuyRequest> carBuyRequests;
 
+	private JButton confirmB;
+	private JButton resetB;
+	private JLabel moneyL = new JLabel();
+
 	CarBuyerGui(final CarBuyerAgent agent) {
 		super(agent.getLocalName());
 		myAgent = agent;
 
 		this.carBuyRequests = myAgent.getCarBuyRequests();
+		createGUI();
+	}
+
+	public void removeAllRequests() {
+		resetB.doClick();
+	}
+
+	public void updateMoneyL() {
+		moneyL.setText(myAgent.getMoney().toPlainString());
+	}
+
+	public void showGui() {
+		pack();
+		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		final int rightX = (int) screenSize.getWidth();
+		setLocation(rightX, 0 + getHeight() * (myAgent.getAgentNumber() - 1));
+		super.setVisible(true);
+	}
+
+	private void createGUI() {
 		final AtomicInteger counter = new AtomicInteger(1);
 
 		final JPanel panel = new JPanel();
-		panel.setLayout(new GridLayout(9, 4));
+		panel.setLayout(new GridLayout(10, 4));
+
+		updateMoneyL();
+
+		panel.add(new JLabel("Current money: "));
+		panel.add(moneyL);
+		panel.add(new JLabel());
+		panel.add(new JLabel());
 
 		final PlaceholderTextField brandsPTF = new PlaceholderTextField();
 		brandsPTF.setPlaceholder("values");
@@ -120,7 +151,8 @@ class CarBuyerGui extends JFrame {
 
 		final JPanel confirmButtonPanel = new JPanel();
 		final JLabel offersL = new JLabel(String.valueOf(carBuyRequests.size()));
-		final JButton confirmB = new JButton(carBuyRequests.size() < 3 ? "Add" : "Start");
+		confirmB = new JButton(carBuyRequests.size() < 3 ? "Add" : "Start");
+		confirmB.setEnabled(carBuyRequests.size() < 3);
 
 		confirmButtonPanel.add(confirmB);
 		confirmButtonPanel.add(offersL);
@@ -207,7 +239,7 @@ class CarBuyerGui extends JFrame {
 			}
 		});
 
-		final JButton resetB = new JButton("Reset");
+		resetB = new JButton("Reset");
 
 		final JPanel resetButtonPanel = new JPanel();
 		resetB.setBackground(Color.RED);
@@ -236,13 +268,5 @@ class CarBuyerGui extends JFrame {
 		});
 
 		setResizable(true);
-	}
-
-	public void showGui() {
-		pack();
-		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		final int rightX = (int) screenSize.getWidth();
-		setLocation(rightX, 0 + getHeight() * (myAgent.getAgentNumber() - 1));
-		super.setVisible(true);
 	}
 }
