@@ -3,9 +3,9 @@ package pl.uz.zgora.cartrading;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -20,10 +20,24 @@ class CarSellerGui extends JFrame {
 		super(agent.getLocalName());
 
 		myAgent = agent;
+
+		redrawPanel();
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(final WindowEvent e) {
+				myAgent.doDelete();
+			}
+		});
+
+		setResizable(true);
+	}
+
+	public void redrawPanel() {
 		final AtomicInteger counter = new AtomicInteger(1);
+		final List<Car> catalogue = myAgent.getCatalogue();
 
 		final JPanel panel = new JPanel();
-		panel.setLayout(new GridLayout(9, 9));
+		panel.setLayout(new GridLayout(catalogue.size() + 1, 9));
 		panel.add(new JLabel("Lp"));
 		panel.add(new JLabel("Brand"));
 		panel.add(new JLabel("Model"));
@@ -34,7 +48,7 @@ class CarSellerGui extends JFrame {
 		panel.add(new JLabel("Cost"));
 		panel.add(new JLabel("Additional cost"));
 
-		myAgent.getCatalogue().forEach(car -> {
+		catalogue.forEach(car -> {
 			panel.add(new JLabel(String.valueOf(counter.getAndIncrement())));
 			panel.add(new JLabel(car.getBrand().getName()));
 			panel.add(new JLabel(car.getModel()));
@@ -47,21 +61,14 @@ class CarSellerGui extends JFrame {
 		});
 
 		final JScrollPane scrollPane = new JScrollPane(panel);
+		getContentPane().removeAll();
 		getContentPane().add(scrollPane, BorderLayout.CENTER);
-
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(final WindowEvent e) {
-				myAgent.doDelete();
-			}
-		});
-
-		setResizable(true);
+		pack();
+		repaint();
 	}
 
 	public void showGui() {
 		pack();
-		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		setSize(new Dimension(getWidth(), 2 * getHeight() / 3));
 		setLocation(0, 0 + getHeight() * (((int) myAgent.getArguments()[0]) - 1));
 

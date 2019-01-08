@@ -11,19 +11,24 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 public class CarBuyerAgent extends Agent {
 
 
 	private CarBuyerGui myGui;
+	@Getter
 	private List<CarBuyRequest> carBuyRequests = new ArrayList<>();
+	@Getter
 	private int agentNumber;
 	//lista znanych sprzedawcow
 	private AID[] sellerAgents;
+	@Getter
 	private BigDecimal money = BigDecimal.valueOf(100000);
 
 	@Override
@@ -74,7 +79,6 @@ public class CarBuyerAgent extends Agent {
 		});
 	}
 
-	//metoda wywolywana przez gui, gdy skladana jest dyspozycja kupna auta
 	public void updateClientRequests(final List<CarBuyRequest> requests) {
 		addBehaviour(new OneShotBehaviour() {
 			@Override
@@ -103,6 +107,7 @@ public class CarBuyerAgent extends Agent {
 		private MessageTemplate mt;
 		private BuyerSteps step = BuyerSteps.SEARCH;
 		private CarBuyRequest carBuyRequest;
+		private Car bestOffer;
 
 		public RequestPerformer(final CarBuyRequest carBuyRequest) {
 			this.carBuyRequest = carBuyRequest;
@@ -112,7 +117,6 @@ public class CarBuyerAgent extends Agent {
 		public void action() {
 			switch (step) {
 				case SEARCH:
-					//call for proposal (cfp) do znalezionych sprzedajacych
 					final ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
 					for (int i = 0; i < sellerAgents.length; ++i) {
 						cfp.addReceiver(sellerAgents[i]);
@@ -120,7 +124,7 @@ public class CarBuyerAgent extends Agent {
 					try {
 						cfp.setContentObject(carBuyRequest);
 						cfp.setConversationId("car-trade");
-						cfp.setReplyWith("cfp" + System.currentTimeMillis()); //unikalna wartosc
+						cfp.setReplyWith("cfp" + System.currentTimeMillis());
 						myAgent.send(cfp);
 						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("car-trade"),
 							MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
@@ -131,18 +135,23 @@ public class CarBuyerAgent extends Agent {
 					}
 					break;
 				case RECEIVE_OFFERS:
-					//odbior ofert od sprzedajacych
 					final ACLMessage searchReply = myAgent.receive(mt);
 					if (searchReply != null) {
 						if (searchReply.getPerformative() == ACLMessage.PROPOSE) {
-							//otrzymano oferte
-							final BigDecimal price = BigDecimal
-								.valueOf(Double.parseDouble(searchReply.getContent()));
-							if (bestSeller == null || price.compareTo(bestPrice) < 0) {
-								//jak na razie to najlepsza oferta
-								bestPrice = price;
-								bestSeller = searchReply.getSender();
+							try {
+								final Car proposal = (Car) searchReply.getContentObject();
+								final BigDecimal price = proposal.getCost()
+									.add(proposal.getAdditionalCost());
+								if (bestSeller == null || price.compareTo(bestPrice) < 0) {
+									//jak na razie to najlepsza oferta
+									bestPrice = price;
+									bestSeller = searchReply.getSender();
+									bestOffer = proposal;
+								}
+							} catch (final UnreadableException e) {
+								e.printStackTrace();
 							}
+
 						}
 						repliesCount++;
 						if (repliesCount >= sellerAgents.length) {
@@ -158,11 +167,15 @@ public class CarBuyerAgent extends Agent {
 					final ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 					order.addReceiver(bestSeller);
 					try {
-						order.setContentObject(carBuyRequest);
-						order.setConversationId("book-trade");
+						order.setContentObject(bestOffer);
+						order.setConversationId("car-trade");
 						order.setReplyWith("order" + System.currentTimeMillis());
+						PrintService.print(getAID().getLocalName()
+							+ ": Oczekiwanie na potwierdzenie zakupu od " + bestSeller
+							.getLocalName() + "\n"
+							+ bestOffer.toString());
 						myAgent.send(order);
-						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("book-trade"),
+						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("car-trade"),
 							MessageTemplate.MatchInReplyTo(order.getReplyWith()));
 						step = BuyerSteps.CONFIRM_BUY;
 					} catch (final IOException ex) {
@@ -171,21 +184,21 @@ public class CarBuyerAgent extends Agent {
 					}
 					break;
 				case CONFIRM_BUY:
-					//potwierdzenie zakupu przez agenta sprzedajacego
 					final ACLMessage confirmBuyReply = myAgent.receive(mt);
 					if (confirmBuyReply != null) {
 						if (confirmBuyReply.getPerformative() == ACLMessage.INFORM) {
-							//zakup zakonczony powodzeniem
+							money = money.subtract(bestPrice);
+							myGui.updateMoneyL();
 							PrintService.print(getAID().getLocalName()
 								+ ": Kupiono auto o ponizszych parametrach za "
 								+ bestPrice + " od " + confirmBuyReply
-								.getSender().getLocalName() + "\n" + carBuyRequest.toString());
+								.getSender().getLocalName() + "\n" + bestOffer.toString());
 						} else {
 							PrintService.print(getAID().getLocalName()
 								+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie\n"
-								+ carBuyRequest.toString());
+								+ bestOffer.toString());
 						}
-						step = BuyerSteps.END_SUCCESSFUL;    //konczy cala interakcje, ktorej celem jest kupno
+						step = BuyerSteps.END_SUCCESSFUL;
 					} else {
 						block();
 					}
@@ -197,26 +210,14 @@ public class CarBuyerAgent extends Agent {
 
 		@Override
 		public boolean done() {
-			if (step == BuyerSteps.RECEIVE_OFFERS && bestSeller == null) {
+			if (step == BuyerSteps.TRY_BUY && bestSeller == null) {
 				PrintService.print(
 					getAID().getLocalName() + ": Nie ma w sprzedazy dla parametrow\n"
 						+ carBuyRequest
 						.toString());
 			}
-			return ((step == BuyerSteps.RECEIVE_OFFERS && bestSeller == null)
+			return ((step == BuyerSteps.TRY_BUY && bestSeller == null)
 				|| step == BuyerSteps.END_SUCCESSFUL || step == BuyerSteps.END_ERROR);
 		}
-	}
-
-	public List<CarBuyRequest> getCarBuyRequests() {
-		return carBuyRequests;
-	}
-
-	public int getAgentNumber() {
-		return agentNumber;
-	}
-
-	public BigDecimal getMoney() {
-		return money;
 	}
 }

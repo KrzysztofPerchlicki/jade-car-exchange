@@ -77,8 +77,6 @@ public class CarSellerAgent extends Agent {
 							.print(getAID().getLocalName() + ": Znaleziono\n" + car.toString()
 								+ "\nDla zapytania\n" + request.toString());
 						reply.setPerformative(ACLMessage.PROPOSE);
-						reply.setContent(String
-							.valueOf(car.getCost().add(car.getAdditionalCost()).doubleValue()));
 						reply.setContentObject(car);
 					} else {
 						reply.setPerformative(ACLMessage.REFUSE);
@@ -189,6 +187,7 @@ public class CarSellerAgent extends Agent {
 					final ACLMessage reply = msg.createReply();
 
 					if (catalogue.remove(car)) {
+						myGui.redrawPanel();
 						reply.setPerformative(ACLMessage.INFORM);
 						PrintService.print(
 							getAID().getLocalName() + ": Auto ponizej sprzedane dla kupującego "
