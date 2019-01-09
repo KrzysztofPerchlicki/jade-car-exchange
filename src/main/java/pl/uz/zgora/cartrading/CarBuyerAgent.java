@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import lombok.Getter;
 
 public class CarBuyerAgent extends Agent {
@@ -26,10 +27,9 @@ public class CarBuyerAgent extends Agent {
 	private List<CarBuyRequest> carBuyRequests = new ArrayList<>();
 	@Getter
 	private int agentNumber;
-	//lista znanych sprzedawcow
 	private AID[] sellerAgents;
 	@Getter
-	private BigDecimal money = BigDecimal.valueOf(100000);
+	private BigDecimal money = BigDecimal.valueOf(15000);
 
 	@Override
 	protected void setup() {
@@ -43,8 +43,6 @@ public class CarBuyerAgent extends Agent {
 		}
 		myGui = new CarBuyerGui(this);
 		myGui.showGui();
-		//interwal czasowy dla kupujacego pomiedzy wysylaniem kolejnych cfp
-		//przekazywany jako argument linii polecen
 		final int interval = 5000;
 		addBehaviour(new TickerBehaviour(this, interval) {
 			@Override
@@ -52,7 +50,6 @@ public class CarBuyerAgent extends Agent {
 				if (carBuyRequests.stream()
 					.anyMatch(carBuyRequest -> !carBuyRequest.isProcessing())) {
 					PrintService.print(getAID().getLocalName() + ": Szukam ofert od sprzedawcow");
-					//aktualizuj liste znanych sprzedawcow
 					final DFAgentDescription template = new DFAgentDescription();
 					final ServiceDescription sd = new ServiceDescription();
 					sd.setType("car-seller");
@@ -157,15 +154,19 @@ public class CarBuyerAgent extends Agent {
 						repliesCount++;
 						if (repliesCount >= sellerAgents.length) {
 							//otrzymano wszystkie oferty -> nastepny krok
-							step = BuyerSteps.TRY_BUY;
+							step = BuyerSteps.OFFER_REPLY;
 						}
 					} else {
 						block();
 					}
 					break;
-				case TRY_BUY:
-					//zakup najlepszej oferty
-					final ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+				case OFFER_REPLY:
+					final Random random = new Random();
+					final boolean shouldReserve =
+						money.compareTo(bestPrice) < 0 || random.nextBoolean();
+					final ACLMessage order = new ACLMessage(
+						shouldReserve ? ACLMessage.REQUEST
+							: ACLMessage.ACCEPT_PROPOSAL);
 					order.addReceiver(bestSeller);
 					try {
 						order.setContentObject(bestOffer);
@@ -178,29 +179,65 @@ public class CarBuyerAgent extends Agent {
 						myAgent.send(order);
 						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("car-trade"),
 							MessageTemplate.MatchInReplyTo(order.getReplyWith()));
-						step = BuyerSteps.CONFIRM_BUY;
+						step =
+							shouldReserve ? BuyerSteps.CONFIRM_RESERVATION : BuyerSteps.CONFIRM_BUY;
 					} catch (final IOException ex) {
 						ex.printStackTrace();
 						step = BuyerSteps.END_ERROR;
 					}
 					break;
+				case CONFIRM_RESERVATION:
+					final ACLMessage confirmReservation = myAgent.receive(mt);
+					if (confirmReservation != null) {
+						if (confirmReservation.getPerformative() == ACLMessage.CONFIRM) {
+							PrintService.print(getAID().getLocalName()
+								+ ": Zarezerwowano auto o ponizszych parametrach u " +
+								confirmReservation.getSender().getLocalName() + "\n" + bestOffer
+								.toString());
+						} else if (confirmReservation.getPerformative() == ACLMessage.FAILURE) {
+							if (confirmReservation.getContent().equals("not-reserved")) {
+								PrintService.print(getAID().getLocalName()
+									+ ": Rezerwacja ponizszego auta u " + confirmReservation
+									.getSender()
+									.getLocalName() + " nieudana\n"
+									+ bestOffer.toString());
+							} else {
+								PrintService.print(getAID().getLocalName()
+									+ ": Rezerwacja poniższego auta u " + confirmReservation
+									.getSender()
+									.getLocalName() + " została już kiedyś dokonana\n"
+									+ bestOffer.toString());
+							}
+
+						}
+						step = BuyerSteps.END_SUCCESSFUL;
+					} else {
+						block();
+					}
+					break;
 				case CONFIRM_BUY:
 					final ACLMessage confirmBuyReply = myAgent.receive(mt);
 					if (confirmBuyReply != null) {
-						if (confirmBuyReply.getPerformative() == ACLMessage.INFORM) {
+						if (confirmBuyReply.getPerformative() == ACLMessage.CONFIRM) {
 							money = money.subtract(bestPrice);
 							myGui.updateMoneyL();
 							PrintService.print(getAID().getLocalName()
 								+ ": Kupiono auto o ponizszych parametrach za "
 								+ bestPrice + " od " + confirmBuyReply
 								.getSender().getLocalName() + "\n" + bestOffer.toString());
-							
+
 							carBuyRequests.remove(carBuyRequest);
 							myGui.removeRequest();
-						} else {
-							PrintService.print(getAID().getLocalName()
-								+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie\n"
-								+ bestOffer.toString());
+						} else if (confirmBuyReply.getPerformative() == ACLMessage.FAILURE) {
+							if (confirmBuyReply.getContent().equals("reserved")) {
+								PrintService.print(getAID().getLocalName()
+									+ ": Zakup nieudany. Auto o poniższych parametrach zostało zarezerwowane w międzyczasie\n"
+									+ bestOffer.toString());
+							} else {
+								PrintService.print(getAID().getLocalName()
+									+ ": Zakup nieudany. Auto o poniższych parametrach kupiono w międzyczasie\n"
+									+ bestOffer.toString());
+							}
 						}
 						step = BuyerSteps.END_SUCCESSFUL;
 					} else {
@@ -214,7 +251,7 @@ public class CarBuyerAgent extends Agent {
 
 		@Override
 		public boolean done() {
-			if (step == BuyerSteps.TRY_BUY && bestSeller == null) {
+			if (step == BuyerSteps.OFFER_REPLY && bestSeller == null) {
 				carBuyRequest.setProcessing(false);
 
 				PrintService.print(

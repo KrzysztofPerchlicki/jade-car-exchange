@@ -2,6 +2,7 @@ package pl.uz.zgora.cartrading;
 
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -12,8 +13,10 @@ import jade.lang.acl.UnreadableException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import lombok.Getter;
 
 public class CarSellerAgent extends Agent {
@@ -21,6 +24,9 @@ public class CarSellerAgent extends Agent {
 	@Getter
 	private List<Car> catalogue;
 	private CarSellerGui myGui;
+	@Getter
+	private ReservationManager reservationManager = new ReservationManager();
+	private Random random = new Random();
 
 	@Override
 	protected void setup() {
@@ -42,8 +48,8 @@ public class CarSellerAgent extends Agent {
 		}
 
 		addBehaviour(new OfferRequestsServer());
-
 		addBehaviour(new PurchaseOrdersServer());
+		addBehaviour(new ReserveCarServer());
 	}
 
 	@Override
@@ -69,7 +75,8 @@ public class CarSellerAgent extends Agent {
 				try {
 					final CarBuyRequest request = (CarBuyRequest) msg.getContentObject();
 
-					final Optional<Car> carOffer = getBestOffer(request);
+					final Optional<Car> carOffer = getBestOffer(msg.getSender().getLocalName(),
+						request);
 					final ACLMessage reply = msg.createReply();
 					if (carOffer.isPresent()) {
 						final Car car = carOffer.get();
@@ -92,7 +99,7 @@ public class CarSellerAgent extends Agent {
 			}
 		}
 
-		private Optional<Car> getBestOffer(final CarBuyRequest request) {
+		private Optional<Car> getBestOffer(final String buyerName, final CarBuyRequest request) {
 			return catalogue.stream().filter(car -> {
 				final List<Brand> brands =
 					request.getBrands() == null ? new ArrayList<>() : request.getBrands();
@@ -166,7 +173,10 @@ public class CarSellerAgent extends Agent {
 
 				return true;
 
-			}).min((car1, car2) -> {
+			}).filter(car -> reservationManager.get(car)
+				.map(reservation1 -> reservation1.getBuyerName().equals(buyerName))
+				.orElse(true)
+			).min((car1, car2) -> {
 				final BigDecimal cost1 = car1.getCost().add(car1.getAdditionalCost());
 				final BigDecimal cost2 = car2.getCost().add(car2.getAdditionalCost());
 				return cost1.compareTo(cost2);
@@ -178,23 +188,29 @@ public class CarSellerAgent extends Agent {
 
 		@Override
 		public void action() {
-			final MessageTemplate mt = MessageTemplate
+			final MessageTemplate messageTemplate = MessageTemplate
 				.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-			final ACLMessage msg = myAgent.receive(mt);
+			final ACLMessage msg = myAgent.receive(messageTemplate);
 			if (msg != null) {
 				try {
 					final Car car = (Car) msg.getContentObject();
 					final ACLMessage reply = msg.createReply();
-
-					if (catalogue.remove(car)) {
-						myGui.redrawPanel();
-						reply.setPerformative(ACLMessage.INFORM);
-						PrintService.print(
-							getAID().getLocalName() + ": Auto ponizej sprzedane dla kupującego "
-								+ msg.getSender().getLocalName() + "\n" + car.toString());
-					} else {
+					if (reservationManager.isReserved(car) && !reservationManager
+						.isReserved(msg.getSender().getLocalName(), car)) {
 						reply.setPerformative(ACLMessage.FAILURE);
-						reply.setContent("not-available");
+						reply.setContent("reserved");
+
+					} else {
+						if (catalogue.remove(car)) {
+							myGui.redrawPanel();
+							reply.setPerformative(ACLMessage.CONFIRM);
+							PrintService.print(
+								getAID().getLocalName() + ": Auto ponizej sprzedane dla kupującego "
+									+ msg.getSender().getLocalName() + "\n" + car.toString());
+						} else {
+							reply.setPerformative(ACLMessage.FAILURE);
+							reply.setContent("not-available");
+						}
 					}
 					myAgent.send(reply);
 				} catch (final UnreadableException e) {
@@ -204,6 +220,63 @@ public class CarSellerAgent extends Agent {
 			} else {
 				block();
 			}
+		}
+	}
+
+	private class ReserveCarServer extends CyclicBehaviour {
+
+		@Override
+		public void action() {
+			final MessageTemplate messageTemplate = MessageTemplate
+				.MatchPerformative(ACLMessage.REQUEST);
+			final ACLMessage msg = myAgent.receive(messageTemplate);
+			if (msg != null) {
+				try {
+					final Car car = (Car) msg.getContentObject();
+					final ACLMessage reply = msg.createReply();
+
+					if (catalogue.contains(car) && !reservationManager.isReserved(car)) {
+						final Reservation reservation = reservationManager
+							.add(msg.getSender().getLocalName(), car,
+								random.nextInt(30000) + 15000);
+						addBehaviour(new RemoveReservationServer(getAgent(), reservation));
+						myGui.redrawPanel();
+						reply.setPerformative(ACLMessage.CONFIRM);
+						PrintService.print(
+							getAID().getLocalName() + ": Auto ponizej zarezerwowane dla kupującego "
+								+ msg.getSender().getLocalName() + "\n" + car.toString());
+					} else if (reservationManager.isReserved(msg.getSender().getLocalName(), car)) {
+						reply.setPerformative(ACLMessage.FAILURE);
+						reply.setContent("already-reserved");
+					} else {
+						reply.setPerformative(ACLMessage.FAILURE);
+						reply.setContent("not-reserved");
+					}
+
+					myAgent.send(reply);
+				} catch (final UnreadableException e) {
+					e.printStackTrace();
+				}
+
+			} else {
+				block();
+			}
+		}
+	}
+
+	private class RemoveReservationServer extends WakerBehaviour {
+
+		private Reservation reservation;
+
+		public RemoveReservationServer(final Agent agent, final Reservation reservation) {
+			super(agent, Date.from(reservation.getEndTime().toInstant()));
+			this.reservation = reservation;
+		}
+
+		@Override
+		protected void onWake() {
+			reservationManager.remove(reservation);
+			myGui.redrawPanel();
 		}
 	}
 }

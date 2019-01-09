@@ -1,11 +1,13 @@
 package pl.uz.zgora.cartrading;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -32,6 +34,10 @@ class CarSellerGui extends JFrame {
 		setResizable(true);
 	}
 
+	public void showGui() {
+		super.setVisible(true);
+	}
+
 	public void redrawPanel() {
 		final AtomicInteger counter = new AtomicInteger(1);
 		final List<Car> catalogue = myAgent.getCatalogue();
@@ -49,29 +55,55 @@ class CarSellerGui extends JFrame {
 		panel.add(new JLabel("Additional cost"));
 
 		catalogue.forEach(car -> {
-			panel.add(new JLabel(String.valueOf(counter.getAndIncrement())));
-			panel.add(new JLabel(car.getBrand().getName()));
-			panel.add(new JLabel(car.getModel()));
-			panel.add(new JLabel(car.getBodyType().name()));
-			panel.add(new JLabel(car.getEngineType().name()));
-			panel.add(new JLabel(String.valueOf(car.getEngineCapacity())));
-			panel.add(new JLabel(String.valueOf(car.getProductionYear())));
-			panel.add(new JLabel(car.getCost().toPlainString()));
-			panel.add(new JLabel(car.getAdditionalCost().toPlainString()));
+			final Optional<Reservation> reservation = myAgent.getReservationManager().get(car);
+			final Color background = reservation.isPresent() ? Color.ORANGE : panel.getBackground();
+			final String tooltipText = reservation
+				.map(reservation1 -> "Reserved by " + reservation1.getBuyerName())
+				.orElse(null);
+
+			panel.add(
+				createLabel(String.valueOf(counter.getAndIncrement()), background, tooltipText));
+
+			panel.add(
+				createLabel(car.getBrand().getName(), background, tooltipText));
+
+			panel.add(createLabel(car.getModel(), background, tooltipText));
+
+			panel.add(createLabel(car.getBodyType().name(), background, tooltipText));
+
+			panel.add(
+				createLabel(car.getEngineType().name(), background, tooltipText));
+
+			panel.add(
+				createLabel(String.valueOf(car.getEngineCapacity()), background, tooltipText));
+
+			panel.add(
+				createLabel(String.valueOf(car.getProductionYear()), background, tooltipText));
+
+			panel.add(
+				createLabel(car.getCost().toPlainString(), background, tooltipText));
+
+			panel.add(
+				createLabel(car.getAdditionalCost().toPlainString(), background, tooltipText));
 		});
 
 		final JScrollPane scrollPane = new JScrollPane(panel);
 		getContentPane().removeAll();
 		getContentPane().add(scrollPane, BorderLayout.CENTER);
 		pack();
+		setSize(new Dimension(getWidth(), 2 * getHeight() / 3));
+		setLocation(0, getHeight() * (((int) myAgent.getArguments()[0]) - 1));
 		repaint();
 	}
 
-	public void showGui() {
-		pack();
-		setSize(new Dimension(getWidth(), 2 * getHeight() / 3));
-		setLocation(0, 0 + getHeight() * (((int) myAgent.getArguments()[0]) - 1));
-
-		super.setVisible(true);
+	private JLabel createLabel(final String text, final Color background,
+		final String tooltipText) {
+		final JLabel label = new JLabel(text);
+		label.setBackground(background);
+		label.setOpaque(true);
+		label.setToolTipText(tooltipText);
+		return label;
 	}
+
+
 }
