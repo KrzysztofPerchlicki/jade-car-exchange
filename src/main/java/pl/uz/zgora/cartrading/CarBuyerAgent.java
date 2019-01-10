@@ -29,7 +29,7 @@ public class CarBuyerAgent extends Agent {
 	private int agentNumber;
 	private AID[] sellerAgents;
 	@Getter
-	private BigDecimal money = BigDecimal.valueOf(5000);
+	private BigDecimal money = BigDecimal.valueOf(100000);
 
 	@Override
 	protected void setup() {
