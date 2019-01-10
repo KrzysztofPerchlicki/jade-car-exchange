@@ -29,12 +29,11 @@ public class CarBuyerAgent extends Agent {
 	private int agentNumber;
 	private AID[] sellerAgents;
 	@Getter
-	private BigDecimal money = BigDecimal.valueOf(15000);
+	private BigDecimal money = BigDecimal.valueOf(5000);
 
 	@Override
 	protected void setup() {
-		System.out.println(
-			getAID().getLocalName() + ": Czekam na dyspozycje kupna...\n");
+		PrintService.print(getAID().getLocalName() + ": Czekam na dyspozycje kupna...\n");
 		final Object[] args = getArguments();
 		if (args.length > 0) {
 			this.agentNumber = (int) args[0];
@@ -106,6 +105,7 @@ public class CarBuyerAgent extends Agent {
 		private BuyerSteps step = BuyerSteps.SEARCH;
 		private CarBuyRequest carBuyRequest;
 		private Car bestOffer;
+		private static final String CONVERSATION_ID = "car-trade";
 
 		public RequestPerformer(final CarBuyRequest carBuyRequest) {
 			this.carBuyRequest = carBuyRequest;
@@ -121,11 +121,12 @@ public class CarBuyerAgent extends Agent {
 					}
 					try {
 						cfp.setContentObject(carBuyRequest);
-						cfp.setConversationId("car-trade");
+						cfp.setConversationId(CONVERSATION_ID);
 						cfp.setReplyWith("cfp" + System.currentTimeMillis());
 						myAgent.send(cfp);
-						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("car-trade"),
-							MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+						mt = MessageTemplate
+							.and(MessageTemplate.MatchConversationId(CONVERSATION_ID),
+								MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
 						step = BuyerSteps.RECEIVE_OFFERS;
 					} catch (final IOException ex) {
 						ex.printStackTrace();
@@ -141,7 +142,6 @@ public class CarBuyerAgent extends Agent {
 								final BigDecimal price = proposal.getCost()
 									.add(proposal.getAdditionalCost());
 								if (bestSeller == null || price.compareTo(bestPrice) < 0) {
-									//jak na razie to najlepsza oferta
 									bestPrice = price;
 									bestSeller = searchReply.getSender();
 									bestOffer = proposal;
@@ -153,7 +153,6 @@ public class CarBuyerAgent extends Agent {
 						}
 						repliesCount++;
 						if (repliesCount >= sellerAgents.length) {
-							//otrzymano wszystkie oferty -> nastepny krok
 							step = BuyerSteps.OFFER_REPLY;
 						}
 					} else {
@@ -170,15 +169,16 @@ public class CarBuyerAgent extends Agent {
 					order.addReceiver(bestSeller);
 					try {
 						order.setContentObject(bestOffer);
-						order.setConversationId("car-trade");
+						order.setConversationId(CONVERSATION_ID);
 						order.setReplyWith("order" + System.currentTimeMillis());
 						PrintService.print(getAID().getLocalName()
 							+ ": Oczekiwanie na potwierdzenie zakupu od " + bestSeller
 							.getLocalName() + "\n"
 							+ bestOffer.toString());
 						myAgent.send(order);
-						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("car-trade"),
-							MessageTemplate.MatchInReplyTo(order.getReplyWith()));
+						mt = MessageTemplate
+							.and(MessageTemplate.MatchConversationId(CONVERSATION_ID),
+								MessageTemplate.MatchInReplyTo(order.getReplyWith()));
 						step =
 							shouldReserve ? BuyerSteps.CONFIRM_RESERVATION : BuyerSteps.CONFIRM_BUY;
 					} catch (final IOException ex) {

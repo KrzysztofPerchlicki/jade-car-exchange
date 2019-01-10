@@ -71,7 +71,6 @@ public class CarSellerAgent extends Agent {
 			final MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
 			final ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
-				// CFP Message received. Process it
 				try {
 					final CarBuyRequest request = (CarBuyRequest) msg.getContentObject();
 
